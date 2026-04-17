@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Extreme Rhythm Dash</title>
+<title>Extreme Rhythm Dash FIXED</title>
 
 <style>
 body { margin:0; overflow:hidden; background:#111; }
@@ -54,7 +54,7 @@ let hold = false;
 let mode = "cube";
 
 let cameraX = 0;
-let speed = 8; // ⚡ EXTREME SPEED
+let speed = 4.5; // smoother but still fast
 let gravity = 0.65;
 
 let player = {
@@ -65,35 +65,43 @@ let player = {
   dy: 0
 };
 
-// 🧱 20 LEVELS GENERATED
-let levels = [];
-
-for(let i=0;i<20;i++){
-  let offset = i * 800;
-
-  levels.push({
-    spikes: [
-      {x:offset+300,y:c.height-70,w:30,h:30},
-      {x:offset+500,y:c.height-70,w:30,h:30},
-      {x:offset+650,y:c.height-70,w:30,h:30}
-    ],
-    platforms: [
-      {x:offset+0,y:c.height-40,w:800,h:40},
-      {x:offset+350,y:300,w:120,h:20},
-      {x:offset+600,y:250,w:120,h:20}
-    ],
-    portals: [
-      {x:offset+450,y:c.height-100,w:40,h:60,mode:"ship"}
-    ]
-  });
-}
-
 let levelIndex = 0;
 let gameOver = false;
 let score = 0;
 
+// 🌍 FIXED 20 LEVEL SYSTEM (LONG + NO VOIDS)
+let levels = [];
+
+for (let i = 0; i < 20; i++) {
+
+  let start = i * 1500; // 🔥 LONG LEVELS (FIXES VOID ISSUE)
+
+  levels.push({
+    platforms: [
+      // FULL GROUND (NO VOID ANYMORE)
+      { x: start, y: c.height - 40, w: 1500, h: 40 },
+
+      // mid platforms
+      { x: start + 400, y: 320, w: 120, h: 20 },
+      { x: start + 750, y: 260, w: 120, h: 20 },
+      { x: start + 1100, y: 220, w: 120, h: 20 }
+    ],
+
+    spikes: [
+      { x: start + 300, y: c.height - 70, w: 30, h: 30 },
+      { x: start + 600, y: c.height - 70, w: 30, h: 30 },
+      { x: start + 900, y: c.height - 70, w: 30, h: 30 },
+      { x: start + 1200, y: c.height - 70, w: 30, h: 30 }
+    ],
+
+    portals: [
+      { x: start + 800, y: c.height - 100, w: 40, h: 60, mode: "ship" }
+    ]
+  });
+}
+
 function toggleMode(){
-  mode = (mode==="cube") ? "ship" : "cube";
+  mode = (mode === "cube") ? "ship" : "cube";
 }
 
 function reset(){
@@ -112,35 +120,38 @@ function crash(){
 }
 
 function update(){
-  if(gameOver) return;
+  if (gameOver) return;
 
   score++;
-  player.x += 3; // auto run (rhythm feel)
+
+  player.x += speed;
 
   let lvl = levels[levelIndex];
 
-  // LEVEL PROGRESSION
-  if(player.x > (levelIndex+1)*800){
+  // LEVEL SWITCH
+  if (player.x > (levelIndex + 1) * 1500) {
     levelIndex++;
-    if(levelIndex >= levels.length){
-      alert("YOU WIN ALL 20 LEVELS 🔥");
+
+    if (levelIndex >= levels.length) {
+      alert("🔥 YOU BEAT ALL 20 LEVELS!");
       reset();
       return;
     }
   }
 
-  // CAMERA FOLLOWS PLAYER (FIXED)
-  cameraX = player.x - 150;
+  // CAMERA FOLLOW FIX (SMOOTH)
+  cameraX += (player.x - cameraX - 200) * 0.08;
 
   // MODE LOGIC
-  if(mode==="cube"){
+  if (mode === "cube") {
     player.dy += gravity;
 
-    if(hold && player.y >= c.height-80){
+    if (hold && player.y >= c.height - 80) {
       player.dy = -11;
     }
+
   } else {
-    if(hold) player.dy -= 0.8;
+    if (hold) player.dy -= 0.75;
     else player.dy += 0.5;
 
     player.dy *= 0.95;
@@ -148,40 +159,40 @@ function update(){
 
   player.y += player.dy;
 
-  if(player.y > c.height-60) player.y = c.height-60;
-  if(player.y < 0) player.y = 0;
+  if (player.y > c.height - 60) player.y = c.height - 60;
+  if (player.y < 0) player.y = 0;
 
-  // COLLISIONS
-  for(let s of lvl.spikes){
-    if(
-      player.x < s.x+s.w &&
-      player.x+player.w > s.x &&
-      player.y < s.y+s.h &&
-      player.y+player.h > s.y
-    ){
-      crash();
-    }
+  // SPIKES
+  for (let s of lvl.spikes) {
+    if (
+      player.x < s.x + s.w &&
+      player.x + player.w > s.x &&
+      player.y < s.y + s.h &&
+      player.y + player.h > s.y
+    ) crash();
   }
 
-  for(let p of lvl.portals){
-    if(
-      player.x < p.x+p.w &&
-      player.x+player.w > p.x &&
-      player.y < p.y+p.h &&
-      player.y+player.h > p.y
-    ){
+  // PORTALS
+  for (let p of lvl.portals) {
+    if (
+      player.x < p.x + p.w &&
+      player.x + player.w > p.x &&
+      player.y < p.y + p.h &&
+      player.y + player.h > p.y
+    ) {
       mode = p.mode;
     }
   }
 
-  for(let p of lvl.platforms){
-    if(
-      player.x < p.x+p.w &&
-      player.x+player.w > p.x &&
-      player.y < p.y+p.h &&
-      player.y+player.h > p.y
-    ){
-      if(player.dy > 0){
+  // PLATFORM COLLISION
+  for (let p of lvl.platforms) {
+    if (
+      player.x < p.x + p.w &&
+      player.x + player.w > p.x &&
+      player.y < p.y + p.h &&
+      player.y + player.h > p.y
+    ) {
+      if (player.dy > 0) {
         player.y = p.y - player.h;
         player.dy = 0;
       }
@@ -189,12 +200,12 @@ function update(){
   }
 }
 
-function drawSpike(x,y,w,h){
-  ctx.fillStyle="#ff00ff";
+function drawSpike(x, y, w, h) {
+  ctx.fillStyle = "#ff00ff";
   ctx.beginPath();
-  ctx.moveTo(x-cameraX,y+h);
-  ctx.lineTo(x-cameraX+w/2,y);
-  ctx.lineTo(x-cameraX+w,y+h);
+  ctx.moveTo(x - cameraX, y + h);
+  ctx.lineTo(x - cameraX + w / 2, y);
+  ctx.lineTo(x - cameraX + w, y + h);
   ctx.closePath();
   ctx.fill();
 }
@@ -205,36 +216,36 @@ function draw(){
   let lvl = levels[levelIndex];
 
   // platforms
-  ctx.fillStyle="#0f0";
-  for(let p of lvl.platforms){
-    ctx.fillRect(p.x-cameraX,p.y,p.w,p.h);
+  ctx.fillStyle = "#0f0";
+  for (let p of lvl.platforms) {
+    ctx.fillRect(p.x - cameraX, p.y, p.w, p.h);
   }
 
   // spikes
-  for(let s of lvl.spikes){
-    drawSpike(s.x,s.y,s.w,s.h);
+  for (let s of lvl.spikes) {
+    drawSpike(s.x, s.y, s.w, s.h);
   }
 
   // portals
-  for(let p of lvl.portals){
-    ctx.fillStyle = p.mode==="ship" ? "#00ffff" : "#ffff00";
-    ctx.fillRect(p.x-cameraX,p.y,p.w,p.h);
+  for (let p of lvl.portals) {
+    ctx.fillStyle = p.mode === "ship" ? "#00ffff" : "#ffff00";
+    ctx.fillRect(p.x - cameraX, p.y, p.w, p.h);
   }
 
   // player
-  ctx.fillStyle = mode==="ship" ? "#00ffff" : "#ff4444";
-  ctx.fillRect(player.x-cameraX,player.y,player.w,player.h);
+  ctx.fillStyle = mode === "ship" ? "#00ffff" : "#ff4444";
+  ctx.fillRect(player.x - cameraX, player.y, player.w, player.h);
 
   // UI
-  ctx.fillStyle="white";
-  ctx.font="18px Arial";
-  ctx.fillText("Level: "+(levelIndex+1)+"/20",20,30);
-  ctx.fillText("Mode: "+mode.toUpperCase(),20,55);
-  ctx.fillText("Score: "+score,20,80);
+  ctx.fillStyle = "white";
+  ctx.font = "18px Arial";
+  ctx.fillText("Level: " + (levelIndex + 1) + "/20", 20, 30);
+  ctx.fillText("Mode: " + mode.toUpperCase(), 20, 55);
+  ctx.fillText("Score: " + score, 20, 80);
 
-  if(gameOver){
-    ctx.font="40px Arial";
-    ctx.fillText("CRASH!", c.width/2-80,c.height/2);
+  if (gameOver) {
+    ctx.font = "40px Arial";
+    ctx.fillText("CRASH!", c.width/2 - 80, c.height/2);
   }
 }
 
