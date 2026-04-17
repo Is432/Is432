@@ -1,18 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Simple Platform Game</title>
+
 <style>
-body { margin:0; overflow:hidden; background:skyblue; }
-canvas { display:block; }
-.controls {
-  position:fixed; bottom:10px; width:100%;
-  display:flex; justify-content:space-between; padding:0 20px;
+body {
+  margin: 0;
+  overflow: hidden;
+  background: skyblue;
 }
-button { font-size:22px; padding:15px; }
+
+/* canvas full screen */
+canvas {
+  display: block;
+}
+
+/* 🔥 FIXED MOBILE CONTROLS */
+.controls {
+  position: fixed;
+  bottom: 40px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 40px;
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+/* joystick buttons */
+button {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  font-size: 26px;
+  border: none;
+  background: rgba(0,0,0,0.45);
+  color: white;
+  touch-action: none;
+}
+
+button:active {
+  background: rgba(0,0,0,0.75);
+}
+
+.jumpBtn {
+  width: 85px;
+  height: 85px;
+}
 </style>
 </head>
+
 <body>
 
 <canvas id="game"></canvas>
@@ -22,7 +60,7 @@ button { font-size:22px; padding:15px; }
     <button ontouchstart="left=true" ontouchend="left=false">⬅️</button>
     <button ontouchstart="right=true" ontouchend="right=false">➡️</button>
   </div>
-  <button ontouchstart="jump()">⬆️</button>
+  <button class="jumpBtn" ontouchstart="jump()">⬆️</button>
 </div>
 
 <script>
@@ -32,93 +70,124 @@ const ctx = c.getContext("2d");
 c.width = window.innerWidth;
 c.height = window.innerHeight;
 
+/* prevent iPad scrolling */
+document.addEventListener("touchmove", e => e.preventDefault(), { passive:false });
+
 let player = {x:50,y:200,w:30,h:30,dy:0};
 let gravity = 0.6;
-let left=false,right=false;
-let score=0;
 
-let platforms=[
+let left = false;
+let right = false;
+
+let score = 0;
+
+let platforms = [
   {x:0,y:c.height-40,w:2000,h:40},
   {x:200,y:300,w:120,h:20},
   {x:450,y:250,w:120,h:20}
 ];
 
-let coins=[
+let coins = [
   {x:220,y:260,r:10,taken:false},
   {x:470,y:210,r:10,taken:false}
 ];
 
-let enemies=[
+let enemies = [
   {x:600,y:c.height-70,w:30,h:30,dir:1}
 ];
 
-function jump(){
-  if(player.dy===0) player.dy=-12;
+function jump() {
+  if (player.dy === 0) player.dy = -12;
 }
 
-function update(){
-  if(left) player.x-=4;
-  if(right) player.x+=4;
+function update() {
+  if (left) player.x -= 4;
+  if (right) player.x += 4;
 
-  player.dy+=gravity;
-  player.y+=player.dy;
+  player.dy += gravity;
+  player.y += player.dy;
 
   // platforms
-  platforms.forEach(p=>{
-    if(player.x<p.x+p.w && player.x+player.w>p.x &&
-       player.y<p.y+p.h && player.y+player.h>p.y){
-      if(player.dy>0){ player.y=p.y-player.h; player.dy=0; }
+  for (let p of platforms) {
+    if (
+      player.x < p.x + p.w &&
+      player.x + player.w > p.x &&
+      player.y < p.y + p.h &&
+      player.y + player.h > p.y
+    ) {
+      if (player.dy > 0) {
+        player.y = p.y - player.h;
+        player.dy = 0;
+      }
     }
-  });
+  }
 
   // coins
-  coins.forEach(c=>{
-    if(!c.taken &&
-      Math.hypot(player.x-c.x, player.y-c.y)<25){
-      c.taken=true;
+  for (let c of coins) {
+    if (!c.taken &&
+      Math.hypot(player.x - c.x, player.y - c.y) < 25) {
+      c.taken = true;
       score++;
     }
-  });
+  }
 
   // enemies
-  enemies.forEach(e=>{
-    e.x+=e.dir*2;
-    if(e.x<500||e.x>800)e.dir*=-1;
+  for (let e of enemies) {
+    e.x += e.dir * 2;
 
-    if(player.x<e.x+e.w && player.x+player.w>e.x &&
-       player.y<e.y+e.h && player.y+player.h>e.y){
+    if (e.x < 500 || e.x > 800) e.dir *= -1;
+
+    if (
+      player.x < e.x + e.w &&
+      player.x + player.w > e.x &&
+      player.y < e.y + e.h &&
+      player.y + player.h > e.y
+    ) {
       alert("You Died!");
       location.reload();
     }
-  });
+  }
 
-  if(player.y>c.height) location.reload();
+  if (player.y > c.height) location.reload();
 }
 
-function draw(){
-  ctx.clearRect(0,0,c.width,c.height);
+function draw() {
+  ctx.clearRect(0, 0, c.width, c.height);
 
-  ctx.fillStyle="red";
-  ctx.fillRect(player.x,player.y,player.w,player.h);
+  // player
+  ctx.fillStyle = "red";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
 
-  ctx.fillStyle="green";
-  platforms.forEach(p=>ctx.fillRect(p.x,p.y,p.w,p.h));
+  // platforms
+  ctx.fillStyle = "green";
+  for (let p of platforms) ctx.fillRect(p.x, p.y, p.w, p.h);
 
-  ctx.fillStyle="gold";
-  coins.forEach(c=>{ if(!c.taken){
-    ctx.beginPath();
-    ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
-    ctx.fill();
-  }});
+  // coins
+  ctx.fillStyle = "gold";
+  for (let c of coins) {
+    if (!c.taken) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
-  ctx.fillStyle="purple";
-  enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+  // enemies
+  ctx.fillStyle = "purple";
+  for (let e of enemies) ctx.fillRect(e.x, e.y, e.w, e.h);
 
-  ctx.fillStyle="black";
-  ctx.fillText("Score: "+score,20,20);
+  // score
+  ctx.fillStyle = "black";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: " + score, 20, 30);
 }
 
-function loop(){update();draw();requestAnimationFrame(loop);}
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
 loop();
 </script>
 
