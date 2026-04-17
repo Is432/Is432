@@ -2,27 +2,15 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Platform Game</title>
+<title>Simple Platform Game</title>
 <style>
-  body { margin: 0; overflow: hidden; background: skyblue; }
-  canvas { display: block; }
-
-  .controls {
-    position: fixed;
-    bottom: 10px;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 20px;
-  }
-
-  button {
-    font-size: 24px;
-    padding: 18px;
-    border-radius: 10px;
-    border: none;
-    opacity: 0.7;
-  }
+body { margin:0; overflow:hidden; background:skyblue; }
+canvas { display:block; }
+.controls {
+  position:fixed; bottom:10px; width:100%;
+  display:flex; justify-content:space-between; padding:0 20px;
+}
+button { font-size:22px; padding:15px; }
 </style>
 </head>
 <body>
@@ -38,159 +26,99 @@
 </div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+c.width = window.innerWidth;
+c.height = window.innerHeight;
 
+let player = {x:50,y:200,w:30,h:30,dy:0};
 let gravity = 0.6;
-let scrollX = 0;
+let left=false,right=false;
+let score=0;
 
-let player = {
-  x: 50,
-  y: 200,
-  w: 30,
-  h: 30,
-  dx: 0,
-  dy: 0,
-  jumpPower: -12,
-  alive: true
-};
-
-let left = false;
-let right = false;
-
-let ground = canvas.height - 40;
-
-// 🪜 LEVEL
-let platforms = [
-  {x: 0, y: ground, w: 2000, h: 40},
-  {x: 300, y: 300, w: 120, h: 20},
-  {x: 600, y: 250, w: 120, h: 20},
-  {x: 900, y: 200, w: 120, h: 20},
-  {x: 1200, y: 250, w: 120, h: 20}
+let platforms=[
+  {x:0,y:c.height-40,w:2000,h:40},
+  {x:200,y:300,w:120,h:20},
+  {x:450,y:250,w:120,h:20}
 ];
 
-// 👾 ENEMIES
-let enemies = [
-  {x: 400, y: ground - 30, w: 30, h: 30, dir: 1},
-  {x: 1000, y: ground - 30, w: 30, h: 30, dir: -1}
+let coins=[
+  {x:220,y:260,r:10,taken:false},
+  {x:470,y:210,r:10,taken:false}
 ];
 
-// 🏁 GOAL
-let goal = {x: 1500, y: ground - 60, w: 30, h: 60};
+let enemies=[
+  {x:600,y:c.height-70,w:30,h:30,dir:1}
+];
 
-function jump() {
-  if (player.dy === 0 && player.alive) {
-    player.dy = player.jumpPower;
-  }
+function jump(){
+  if(player.dy===0) player.dy=-12;
 }
 
-function restart() {
-  player.x = 50;
-  player.y = 200;
-  player.dx = 0;
-  player.dy = 0;
-  player.alive = true;
-  scrollX = 0;
-}
+function update(){
+  if(left) player.x-=4;
+  if(right) player.x+=4;
 
-function update() {
-  if (!player.alive) return;
-
-  // movement
-  if (left) player.dx = -4;
-  else if (right) player.dx = 4;
-  else player.dx = 0;
-
-  player.x += player.dx;
-
-  player.dy += gravity;
-  player.y += player.dy;
-
-  // platform collision
-  for (let p of platforms) {
-    if (
-      player.x < p.x + p.w &&
-      player.x + player.w > p.x &&
-      player.y < p.y + p.h &&
-      player.y + player.h > p.y
-    ) {
-      if (player.dy > 0) {
-        player.y = p.y - player.h;
-        player.dy = 0;
-      }
-    }
-  }
-
-  // enemies movement + collision
-  for (let e of enemies) {
-    e.x += e.dir * 2;
-
-    if (e.x < 300 || e.x > 1200) e.dir *= -1;
-
-    if (
-      player.x < e.x + e.w &&
-      player.x + player.w > e.x &&
-      player.y < e.y + e.h &&
-      player.y + player.h > e.y
-    ) {
-      player.alive = false;
-      setTimeout(restart, 1000);
-    }
-  }
-
-  // goal check
-  if (
-    player.x < goal.x + goal.w &&
-    player.x + player.w > goal.x &&
-    player.y < goal.y + goal.h &&
-    player.y + player.h > goal.y
-  ) {
-    alert("🎉 Level Complete!");
-    restart();
-  }
-
-  // camera scroll
-  scrollX = player.x - 100;
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.save();
-  ctx.translate(-scrollX, 0);
-
-  // player
-  ctx.fillStyle = player.alive ? "red" : "gray";
-  ctx.fillRect(player.x, player.y, player.w, player.h);
+  player.dy+=gravity;
+  player.y+=player.dy;
 
   // platforms
-  ctx.fillStyle = "green";
-  for (let p of platforms) {
-    ctx.fillRect(p.x, p.y, p.w, p.h);
-  }
+  platforms.forEach(p=>{
+    if(player.x<p.x+p.w && player.x+player.w>p.x &&
+       player.y<p.y+p.h && player.y+player.h>p.y){
+      if(player.dy>0){ player.y=p.y-player.h; player.dy=0; }
+    }
+  });
+
+  // coins
+  coins.forEach(c=>{
+    if(!c.taken &&
+      Math.hypot(player.x-c.x, player.y-c.y)<25){
+      c.taken=true;
+      score++;
+    }
+  });
 
   // enemies
-  ctx.fillStyle = "purple";
-  for (let e of enemies) {
-    ctx.fillRect(e.x, e.y, e.w, e.h);
-  }
+  enemies.forEach(e=>{
+    e.x+=e.dir*2;
+    if(e.x<500||e.x>800)e.dir*=-1;
 
-  // goal
-  ctx.fillStyle = "gold";
-  ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+    if(player.x<e.x+e.w && player.x+player.w>e.x &&
+       player.y<e.y+e.h && player.y+player.h>e.y){
+      alert("You Died!");
+      location.reload();
+    }
+  });
 
-  ctx.restore();
+  if(player.y>c.height) location.reload();
 }
 
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
+function draw(){
+  ctx.clearRect(0,0,c.width,c.height);
+
+  ctx.fillStyle="red";
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+
+  ctx.fillStyle="green";
+  platforms.forEach(p=>ctx.fillRect(p.x,p.y,p.w,p.h));
+
+  ctx.fillStyle="gold";
+  coins.forEach(c=>{ if(!c.taken){
+    ctx.beginPath();
+    ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
+    ctx.fill();
+  }});
+
+  ctx.fillStyle="purple";
+  enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+
+  ctx.fillStyle="black";
+  ctx.fillText("Score: "+score,20,20);
 }
 
+function loop(){update();draw();requestAnimationFrame(loop);}
 loop();
 </script>
 
